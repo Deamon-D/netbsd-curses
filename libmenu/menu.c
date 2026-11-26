@@ -79,6 +79,8 @@ int
 set_menu_mark(MENU *m, char *mark)
 {
 	MENU *menu = m;
+
+	if (mark == NULL) mark = "";
 	
 	if (m == NULL) menu = &_menui_default_menu;
 	
@@ -115,6 +117,8 @@ int
 set_menu_unmark(MENU *m, char *mark)
 {
 	MENU *menu = m;
+
+	if (mark == NULL) mark = "";
 
 	if (m == NULL) menu = &_menui_default_menu;
 	
