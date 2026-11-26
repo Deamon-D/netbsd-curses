@@ -100,6 +100,32 @@ __stop_signal_handler(/*ARGSUSED*/int signo)
 	(void)sigprocmask(SIG_SETMASK, &oset, NULL);
 }
 
+/* like ncurses: restore the terminal before an untrapped SIGINT/SIGTERM kills us */
+static void
+__cleanup_signal_handler(int signo)
+{
+	if (_cursesi_screen != NULL && !isendwin())
+		endwin();
+	(void)signal(signo, SIG_DFL);
+	(void)raise(signo);
+}
+
+static void
+__set_cleanuphandlers(void)
+{
+	static int set;
+	struct sigaction osa;
+	int sigs[] = { SIGINT, SIGTERM };
+	size_t i;
+
+	if (set)
+		return;
+	set = 1;
+	for (i = 0; i < sizeof(sigs) / sizeof(sigs[0]); i++)
+		if (sigaction(sigs[i], NULL, &osa) == 0 && osa.sa_handler == SIG_DFL)
+			(void)signal(sigs[i], __cleanup_signal_handler);
+}
+
 /*
  * Set the TSTP handler.
  */
@@ -108,6 +134,7 @@ __set_stophandler(void)
 {
 
 	__CTRACE(__CTRACE_MISC, "__set_stophandler: %d\n", tstp_set);
+	__set_cleanuphandlers();
 	if (!tstp_set) {
 		otstpfn = signal(SIGTSTP, __stop_signal_handler);
 		tstp_set = 1;
